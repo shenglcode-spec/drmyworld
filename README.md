@@ -43,6 +43,14 @@
 ![RabbitMQ](https://img.shields.io/badge/RabbitMQ-FF6600?style=flat-square&logo=rabbitmq&logoColor=white)
 ![Elasticsearch](https://img.shields.io/badge/Elasticsearch-005571?style=flat-square&logo=elasticsearch&logoColor=white)
 
+### 高斯数据库 & 国产化
+
+![GaussDB](https://img.shields.io/badge/GaussDB-CF0A2C?style=flat-square&logo=databricks&logoColor=white)
+![GaussDB_for_MySQL](https://img.shields.io/badge/GaussDB(for_MySQL)-CF0A2C?style=flat-square&logo=mysql&logoColor=white)
+![GaussDB_for_PG](https://img.shields.io/badge/GaussDB(for_PostgreSQL)-CF0A2C?style=flat-square&logo=postgresql&logoColor=white)
+![openGauss](https://img.shields.io/badge/openGauss-CF0A2C?style=flat-square&logo=opensourceinitiative&logoColor=white)
+![Data_Studio](https://img.shields.io/badge/Data_Studio-CF0A2C?style=flat-square&logo=databricks&logoColor=white)
+
 ### DevOps & 工具
 
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
