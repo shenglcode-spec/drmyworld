@@ -285,6 +285,157 @@
 - **有序性**：单分区内有序；相同 key 的消息路由到同一分区。
 </details>
 
+### 🚀 JVM 调优专题
+
+<details>
+<summary><b>Q21：JVM 调优常用参数有哪些？如何排查 OOM？</b></summary>
+
+- **常用参数**：
+  - 堆大小：`-Xms`（初始堆）、`-Xmx`（最大堆），建议两者设为相同避免动态扩容
+  - 新生代：`-Xmn` 或 `-XX:NewRatio`、`-XX:SurvivorRatio`
+  - 元空间：`-XX:MetaspaceSize`、`-XX:MaxMetaspaceSize`
+  - GC 日志：`-Xlog:gc*`（JDK 9+）或 `-XX:+PrintGCDetails`
+  - OOM dump：`-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/heap.hprof`
+- **排查 OOM 步骤**：
+  1. 通过 `jstat -gc` 观察 GC 频率和各区域使用率
+  2. 用 `jmap -dump` 或 OOM 自动 dump 生成堆快照
+  3. 用 MAT / VisualVM 分析 dump，定位大对象和内存泄漏点
+  4. 检查是否有静态集合持有对象、ThreadLocal 未 remove、流未关闭等
+</details>
+
+<details>
+<summary><b>Q22：强引用、软引用、弱引用、虚引用的区别及使用场景？</b></summary>
+
+| 引用类型 | GC 回收时机 | 使用场景 |
+|---------|------------|---------|
+| 强引用 | 不回收（只要引用存在） | 普通对象引用 |
+| 软引用 SoftReference | 内存不足时回收 | 内存敏感的缓存 |
+| 弱引用 WeakReference | 下次 GC 一定回收 | WeakHashMap、ThreadLocal key |
+| 虚引用 PhantomReference | 随时可能回收 | 管理堆外内存，必须配合 ReferenceQueue |
+</details>
+
+### ⚡ MySQL 性能优化
+
+<details>
+<summary><b>Q23：如何排查和优化 MySQL 慢查询？</b></summary>
+
+1. **开启慢查询日志**：`slow_query_log=ON`，`long_query_time=1`
+2. **定位慢 SQL**：`mysqldumpslow` 或 `pt-query-digest` 分析日志
+3. **EXPLAIN 分析执行计划**：关注 `type`（ALL→index→range→ref→eq_ref→const）、`key`、`rows`、`Extra`
+4. **优化手段**：
+   - 添加合适索引（覆盖索引、联合索引最左前缀）
+   - 避免 `SELECT *`、避免索引列上使用函数/运算
+   - 大表分页优化：`WHERE id > last_id LIMIT N` 替代 `LIMIT offset, N`
+   - 优化 JOIN：小表驱动大表，确保 JOIN 字段有索引
+   - 分库分表、读写分离
+5. **配置优化**：`innodb_buffer_pool_size`（物理内存 50%~70%）、`innodb_log_file_size`、连接池等
+</details>
+
+<details>
+<summary><b>Q24：什么是索引下推（ICP）？什么是覆盖索引？</b></summary>
+
+- **索引下推（Index Condition Pushdown）**：MySQL 5.6+ 优化，在存储引擎层利用索引过滤数据，减少回表次数。例如联合索引 `(a, b)`，查询 `WHERE a=1 AND b=2`，可在索引层面直接过滤 b 的条件。
+- **覆盖索引**：查询的列全部包含在索引中，无需回表查询聚簇索引。`EXPLAIN` 的 `Extra` 显示 `Using index`。
+- **示例**：表有索引 `(name, age)`，查询 `SELECT name, age FROM user WHERE name='张三'` 即为覆盖索引，效率极高。
+</details>
+
+### 🌥️ Spring Cloud 微服务
+
+<details>
+<summary><b>Q25：Spring Cloud 核心组件有哪些？各自作用？</b></summary>
+
+| 组件 | 作用 |
+|------|------|
+| Eureka / Nacos | 服务注册与发现 |
+| Ribbon / LoadBalancer | 客户端负载均衡 |
+| Feign / OpenFeign | 声明式 HTTP 调用 |
+| Hystrix / Sentinel | 熔断、降级、限流 |
+| Gateway / Zuul | API 网关 |
+| Config / Nacos Config | 分布式配置中心 |
+| Sleuth + Zipkin | 链路追踪 |
+| Bus | 消息总线（配置刷新） |
+</details>
+
+<details>
+<summary><b>Q26：服务熔断、降级、限流的区别？Sentinel 如何实现？</b></summary>
+
+- **熔断**：下游服务故障时，快速失败，避免级联故障（如 Hystrix/Sentinel 熔断）。
+- **降级**：系统压力大时，关闭非核心功能，保证核心功能可用。
+- **限流**：控制单位时间内的请求数量，保护系统不被冲垮。
+- **Sentinel 实现**：
+  - 基于滑动窗口统计 QPS、线程数等指标
+  - 支持流量控制（直接、关联、链路）、熔断降级（慢调用比例、异常比例、异常数）、热点参数限流
+  - 控制台可动态配置规则
+</details>
+
+<details>
+<summary><b>Q27：Nacos 和 Eureka 的区别？Nacos 的 CP 和 AP 模式？</b></summary>
+
+| 特性 | Eureka | Nacos |
+|------|--------|-------|
+| CAP | AP | 支持 AP + CP 切换 |
+| 健康检查 | 客户端心跳 | 心跳 + 主动探测 |
+| 配置中心 | 无（需 Spring Cloud Config） | 内置 |
+| 控制台 | 弱 | 强（支持权重、命名空间） |
+| 维护状态 | 停更（2.0 停止开发） | 活跃（阿里开源） |
+- **AP 模式**：可用性优先，临时实例（DEFAULT 模式），服务异常直接摘除。
+- **CP 模式**：一致性优先，持久化实例，使用 Raft 协议，需主动注销服务。
+</details>
+
+### 🎨 设计模式
+
+<details>
+<summary><b>Q28：单例模式的实现方式？为什么推荐枚举单例？</b></summary>
+
+- **实现方式**：
+  1. 饿汉式：类加载即创建，线程安全，但浪费内存
+  2. 懒汉式：按需创建，需加锁（DCL 双重检查锁 + volatile）
+  3. 静态内部类：利用类加载机制保证线程安全，延迟加载
+  4. 枚举：JVM 保证单例，防止反射和序列化破坏
+- **推荐枚举的原因**：
+  - 代码简洁，线程安全由 JVM 保证
+  - 天然防止反射攻击（`newInstance` 抛异常）
+  - 天然防止序列化破坏（反序列化返回同一实例）
+</details>
+
+<details>
+<summary><b>Q29：Spring 中用到了哪些设计模式？</b></summary>
+
+- **工厂模式**：BeanFactory、FactoryBean
+- **单例模式**：Spring Bean 默认单例
+- **代理模式**：AOP（JDK 动态代理 / CGLIB）
+- **模板方法**：JdbcTemplate、RestTemplate、RedisTemplate
+- **观察者模式**：ApplicationEvent / ApplicationListener
+- **策略模式**：InstantiationStrategy、ResourceLoader
+- **适配器模式**：AdvisorAdapter、HandlerAdapter
+- **装饰器模式**：BeanWrapper、HttpServletRequestWrapper
+</details>
+
+<details>
+<summary><b>Q30：责任链模式的原理？在哪些框架中应用？</b></summary>
+
+- **原理**：将请求沿处理者链传递，每个处理者决定是否处理或转发给下一个，解耦请求发送者和处理者。
+- **应用场景**：
+  - Spring Security：过滤器链 FilterChain
+  - Servlet：Filter 链
+  - Netty：ChannelPipeline / ChannelHandler
+  - Spring AOP：拦截器链
+- **优点**：灵活组合处理逻辑，易于扩展；**缺点**：可能导致处理延迟，链路过长影响性能。
+</details>
+
+<details>
+<summary><b>Q31：动态代理的实现方式？JDK 代理和 CGLIB 的区别？</b></summary>
+
+| 特性 | JDK 动态代理 | CGLIB |
+|------|-------------|-------|
+| 原理 | 基于接口，生成实现接口的代理类 | 基于继承，生成目标类的子类 |
+| 目标类要求 | 必须实现接口 | 不能是 final 类/方法 |
+| 核心类 | `Proxy`、`InvocationHandler` | `Enhancer`、`MethodInterceptor` |
+| 性能 | 创建快、调用稍慢 | 创建慢、调用快（FastClass） |
+| Spring 默认 | 有接口时使用 | 无接口时使用 |
+- Spring Boot 2.x 起默认使用 CGLIB（可通过 `spring.aop.proxy-target-class=false` 切换为 JDK 代理）。
+</details>
+
 ---
 
 ## 精选项目
