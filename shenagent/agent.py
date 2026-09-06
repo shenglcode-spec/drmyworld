@@ -8,7 +8,7 @@ from skills import SkillRegistry
 MAX_ITERATIONS = 10
 
 SYSTEM_PROMPT = (
-    "你是一个能调用工具的智能助手。"
+    "你是一个能调用工具的智能助手1。"
     "遇到精确计算请调用 calculate，需要当前时间或日期请调用 get_current_time，"
     "需要访问网络资源请调用 http_get；不需要工具时直接回答。回答使用中文。"
 )
